@@ -1,163 +1,94 @@
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(MaterialApp(
+    home: LoginScreen(),
+  ));
 }
 
-Future<Database> initDB() async {
-  return openDatabase(
-    'users.db',
-    version: 1,
-    onCreate: (db, version) async {
-      await db.execute(
-        'CREATE TABLE users(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, age INTEGER)',
-      );
-    },
-  );
-}
+// --- ВАЛІДАЦІЯ ---
+bool validateEmail(String email) =>
+    RegExp(r'\S+@\S+\.\S+').hasMatch(email);
 
-Future<void> addUser(Database db, String name, int age) async {
-  await db.insert(
-    'users',
-    {
-      'name': name,
-      'age': age,
-    },
-  );
-}
+bool validatePassword(String password) =>
+    password.length >= 6;
 
-Future<List<Map<String, dynamic>>> getUsers(Database db) async {
-  return await db.query('users');
-}
-
-Future<void> updateUser(Database db, int id) async {
-  await db.update(
-    'users',
-    {
-      'name': 'Оновлений користувач',
-      'age': 30,
-    },
-    where: 'id = ?',
-    whereArgs: [id],
-  );
-}
-
-Future<void> deleteUser(Database db, int id) async {
-  await db.delete(
-    'users',
-    where: 'id = ?',
-    whereArgs: [id],
-  );
-}
-
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
-
+// --- ЕКРАН ---
+class LoginScreen extends StatefulWidget {
   @override
-  State<MyApp> createState() => _MyAppState();
+  _LoginScreenState createState() => _LoginScreenState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _LoginScreenState extends State<LoginScreen> {
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
 
-  List<Map<String, dynamic>> users = [
-    {
-      'id': 1,
-      'name': 'Іван',
-      'age': 20,
+  String message = '';
+
+  void handleLogin() {
+    final email = emailController.text;
+    final password = passwordController.text;
+
+    if (!validateEmail(email)) {
+      setState(() => message = 'Неправильний email');
+    } else if (!validatePassword(password)) {
+      setState(() => message = 'Пароль мінімум 6 символів');
+    } else {
+      setState(() => message = 'Успішний вхід!');
     }
-  ];
+  }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('SQLite CRUD'),
-        ),
-        body: Column(
+    return Scaffold(
+      appBar: AppBar(title: Text('Login')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
           children: [
 
-            const SizedBox(height: 20),
-
-            ElevatedButton(
-              onPressed: () async {
-                Database db = await initDB();
-
-                await addUser(db, 'Іван', 20);
-
+            // --- ІНДИВІДУАЛЬНЕ ЗАВДАННЯ ---
+            TextField(
+              decoration: InputDecoration(labelText: 'Введіть текст'),
+              onChanged: (value) {
                 setState(() {
-                  users.add({
-                    'id': users.length + 1,
-                    'name': 'Іван',
-                    'age': 20,
-                  });
+                  message = value;
                 });
               },
-              child: const Text('Додати користувача'),
             ),
 
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
-            Expanded(
-              child: ListView.builder(
-                itemCount: users.length,
-                itemBuilder: (context, index) {
-
-                  return ListTile(
-                    title: Text(users[index]['name']),
-                    subtitle: Text(
-                      'Вік: ${users[index]['age']}',
-                    ),
-
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-
-                        IconButton(
-                          icon: const Icon(Icons.edit),
-
-                          onPressed: () async {
-
-                            Database db = await initDB();
-
-                            await updateUser(
-                              db,
-                              users[index]['id'],
-                            );
-
-                            setState(() {
-                              users[index]['name'] =
-                                  'Оновлений користувач';
-
-                              users[index]['age'] = 30;
-                            });
-                          },
-                        ),
-
-                        IconButton(
-                          icon: const Icon(Icons.delete),
-
-                          onPressed: () async {
-
-                            Database db = await initDB();
-
-                            await deleteUser(
-                              db,
-                              users[index]['id'],
-                            );
-
-                            setState(() {
-                              users.removeAt(index);
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+            Text(
+              message,
+              style: TextStyle(fontSize: 18),
             ),
+
+            SizedBox(height: 30),
+
+            // --- ЛОГІН ---
+            TextField(
+              controller: emailController,
+              decoration: InputDecoration(labelText: 'Email'),
+            ),
+
+            TextField(
+              controller: passwordController,
+              decoration: InputDecoration(labelText: 'Password'),
+              obscureText: true,
+            ),
+
+            SizedBox(height: 10),
+
+            ElevatedButton(
+              onPressed: handleLogin,
+              child: Text('Login'),
+            ),
+
+            SizedBox(height: 10),
+
+            Text(message),
+
           ],
         ),
       ),
